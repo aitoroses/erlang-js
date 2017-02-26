@@ -1,0 +1,29 @@
+{
+  "extends": "./config/tsconfig.flexible",
+  "compilerOptions": {
+    "target": "es6",
+    "outDir": "build/main",
+    "rootDir": "src",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "declaration": true,
+    "importHelpers": true,
+    "inlineSourceMap": true,
+    "strictNullChecks": true,
+    "listFiles": false,
+    "pretty": true,
+    "lib" : [
+      "es6"
+    ],
+    "types" : [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules/**"
+  ],
+  "compileOnSave": false
+}
