@@ -1,6 +1,8 @@
 import { PID } from '../erlang-types'
 
-export type Task = Function
+export type Generator = () => IterableIterator<any>
+
+export type Task = Generator
 
 class ProcessQueue {
 

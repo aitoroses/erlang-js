@@ -4,18 +4,13 @@ import { Mailbox } from './mailbox'
 import { Scheduler, Task } from './scheduler'
 import * as States from './states'
 
-const default_throttle = 5
-
-export type Generator = () => IterableIterator<any>
-
-export interface SpawnFn<T> {
-  (fn: () => IterableIterator<any>): T | undefined
-  (mod: Object, fn: string, args: Array<any>): T | undefined
-}
-
 export interface ProcessSystem {
-  spawn(fun: Generator): PID
+  spawn(fun: Task): PID
   spawn(module: Object, fun: string, args: any[]): PID
+  spawn_link(fun: Task): PID
+  spawn_link(module: Object, fun: string, args: any[]): PID
+  spawn_monitor(fun: Task): [PID, Reference]
+  spawn_monitor(module: Object, fun: string, args: any[]): [PID, Reference]
   link(pid: PID): void
   unlink(pid: PID): void
   register(name: string, pid: PID): void
@@ -25,7 +20,7 @@ export interface ProcessSystem {
   pid(): PID
   pidof(pid: PID | Process | string): PID
   send<T>(pid: PID, msg: T): T
-  receive(fun: Generator, timeout: number, timeoutFn: Function)
+  receive(fun: Task, timeout: number, timeoutFn: Function)
   sleep(duration: number)
   exit(reason)
   exit(pid: PID, reason)
@@ -41,7 +36,7 @@ export interface ProcessSystem {
   erase(key)
   is_alive(pid: PID)
   make_ref()
-  list()
+  list(): PID[]
   monitor(pid: PID)
   demonitor(ref: Reference)
 }
@@ -51,17 +46,19 @@ export interface ProcessSystem {
  */
 export class ProcessSystem implements ProcessSystem {
 
-  private pids = new Map<PID, Process>()
-  private mailboxes = new Map<PID, Mailbox>()
-  private names = new Map()
-  private links = new Map<PID, Set<any>>()
-  private monitors = new Map<Reference, Monitor>()
-  private suspended = new Map()
+  static DEFAULT_THROTTLE = 5
 
-  private current_process: Process | undefined
-  private main_process_pid: PID | undefined
+  public pids = new Map<PID, Process>()
+  public mailboxes = new Map<PID, Mailbox>()
+  public names = new Map<string, PID>()
+  public links = new Map<PID, Set<any>>()
+  public monitors = new Map<Reference, Monitor>()
+  public suspended = new Map<PID, Task>()
 
-  private scheduler = new Scheduler(default_throttle)
+  public current_process: Process | undefined
+  public main_process_pid: PID | undefined
+
+  public scheduler = new Scheduler(ProcessSystem.DEFAULT_THROTTLE)
 
   constructor() {
     let process_system_scope = this
@@ -81,7 +78,7 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  spawn(...args) {
+  spawn(...args): PID {
     if (args.length === 1) {
       let fun = args[0]
       return this.add_proc(fun, [], false).pid
@@ -90,9 +87,11 @@ export class ProcessSystem implements ProcessSystem {
     } else {
       throw Error('Incorrect number of arguments')
     }
+
+    return null as any // Compiler undefined skip
   }
 
-  spawn_link: SpawnFn<PID> = (...args) => {
+  spawn_link(...args): PID {
     if (args.length === 1) {
       let fun = args[0]
       return this.add_proc(fun, [], true, false).pid
@@ -101,6 +100,8 @@ export class ProcessSystem implements ProcessSystem {
     } else {
       throw Error('Incorrect number of arguments')
     }
+
+    return null as any // Compiler undefined skip
   }
 
   link(pid: PID) {
@@ -131,7 +132,7 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  spawn_monitor: SpawnFn<[PID, Reference]> = (...args) => {
+  spawn_monitor(...args): [PID, Reference] {
     if (args.length === 1) {
       let fun = args[0]
       let process = this.add_proc(fun, [], false, true)
@@ -155,7 +156,7 @@ export class ProcessSystem implements ProcessSystem {
 
   set_current(id) {
     let pid = this.pidof(id)
-    if (pid !== null) {
+    if (pid !== undefined) {
       this.current_process = this.pids.get(pid)
       if (this.current_process) {
         this.current_process.status = States.RUNNING
@@ -277,9 +278,9 @@ export class ProcessSystem implements ProcessSystem {
     return this.current_process && this.current_process.pid
   }
 
-  pidof(id: PID | Process | string): PID | null {
+  pidof(id: PID | Process | string): PID | undefined {
     if (id instanceof PID) {
-      return this.pids.has(id) ? id : null
+      return this.pids.has(id) ? id : undefined
     } else if (id instanceof Process) {
       return id.pid
     } else {
@@ -302,7 +303,7 @@ export class ProcessSystem implements ProcessSystem {
       (this.mailboxes.get(pid) as any).deliver(msg)
 
       if (this.suspended.has(pid)) {
-        let fun = this.suspended.get(pid)
+        let fun: Task = this.suspended.get(pid) as any
         this.suspended.delete(pid)
         this.schedule(fun)
       }
