@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.4.1"></a>
+## [0.4.1](https://github.com/aitoroses/erlang-js/compare/v0.4.0...v0.4.1) (2017-02-28)
+
+
+### Bug Fixes
+
+* **process-system:** Added two missing methods and change interface name ([450bf39](https://github.com/aitoroses/erlang-js/commit/450bf39))
+
+
+
 <a name="0.4.0"></a>
 # [0.4.0](https://github.com/aitoroses/erlang-js/compare/v0.3.0...v0.4.0) (2017-02-27)
 

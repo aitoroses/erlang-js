@@ -1,6 +1,6 @@
 {
   "name": "erlang-js",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Erlang idioms for javascript",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
