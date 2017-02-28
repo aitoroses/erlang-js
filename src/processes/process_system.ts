@@ -1,10 +1,10 @@
 import { PID, Tuple, Reference } from '../erlang-types'
-import { Process, ProcType, Monitor } from './process'
+import { Process, Monitor, Task } from './process'
 import { Mailbox } from './mailbox'
-import { Scheduler, Task } from './scheduler'
+import { Scheduler } from './scheduler'
 import * as States from './states'
 
-export interface ProcessSystem {
+export interface IProcessSystem {
   spawn(fun: Task): PID
   spawn(module: Object, fun: string, args: any[]): PID
   spawn_link(fun: Task): PID
@@ -14,13 +14,13 @@ export interface ProcessSystem {
   link(pid: PID): void
   unlink(pid: PID): void
   register(name: string, pid: PID): void
-  whereis(name: string): PID
+  whereis(name: string): PID | undefined
   unregister(pid): void
   registered(): Array<string>
   pid(): PID
-  pidof(pid: PID | Process | string): PID
+  pidof(pid: PID | Process | string): PID | undefined
   send<T>(pid: PID, msg: T): T
-  receive(fun: Task, timeout: number, timeoutFn: Function)
+  receive(fun: Task, timeout?: number, timeoutFn?: Function)
   sleep(duration: number)
   exit(reason)
   exit(pid: PID, reason)
@@ -39,12 +39,13 @@ export interface ProcessSystem {
   list(): PID[]
   monitor(pid: PID)
   demonitor(ref: Reference)
+  self(): PID
 }
 
 /**
  * Process System
  */
-export class ProcessSystem implements ProcessSystem {
+export class ProcessSystem implements IProcessSystem {
 
   static DEFAULT_THROTTLE = 5
 
@@ -164,7 +165,7 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  add_proc(fun: ProcType, args: any[], linked: boolean, monitored?: boolean): Process {
+  add_proc(fun: Task, args: any[], linked: boolean, monitored?: boolean): Process {
     let newpid = new PID()
     let mailbox = new Mailbox()
     let newproc = new Process(newpid, fun, args, mailbox, this)
@@ -274,8 +275,8 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  pid() {
-    return this.current_process && this.current_process.pid
+  pid(): PID {
+    return this.current_process && this.current_process.pid as any
   }
 
   pidof(id: PID | Process | string): PID | undefined {
@@ -292,8 +293,8 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  whereis(name: string) {
-    return this.names.has(name) ? this.names.get(name) : null
+  whereis(name: string): PID | undefined {
+    return this.names.has(name) ? this.names.get(name) : undefined
   }
 
   send(id: PID | Process | string , msg) {
@@ -310,7 +311,7 @@ export class ProcessSystem implements ProcessSystem {
     }
   }
 
-  recieve(fun, timeout = 0, timeoutFn = () => true) {
+  receive(fun: Task, timeout = 0, timeoutFn = () => true) {
     let DateTimeout: number | null = null
 
     if (timeout === 0 || timeout === Infinity) {
@@ -459,5 +460,19 @@ export class ProcessSystem implements ProcessSystem {
 
   list() {
     return Array.from(this.pids.keys())
+  }
+
+  self(): PID {
+    if (this.current_process) {
+      return this.current_process.pid
+    } else {
+      return null as any
+    }
+  }
+
+  error(reason) {
+    if (this.current_process) {
+      this.current_process.signal(reason)
+    }
   }
 }

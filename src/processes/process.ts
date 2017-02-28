@@ -8,6 +8,8 @@ export type Monitor = {
   monitee: PID
 }
 
+export type Task = () => IterableIterator<any>
+
 function is_sleep(value) {
   return Array.isArray(value) && value[0] === States.SLEEP
 }
@@ -20,12 +22,10 @@ function receive_timed_out(value) {
   return value[2] != null && value[2] < Date.now()
 }
 
-export type ProcType = () => IterableIterator<any>
-
 export class Process {
 
   public pid: PID
-  public func: ProcType
+  public func: Task
   public args: any[]
   public mailbox: Mailbox
   public system: ProcessSystem
@@ -34,7 +34,7 @@ export class Process {
   public flags: Object
   public monitors: Array<Reference>
 
-  constructor(pid: PID, func: ProcType, args: any[], mailbox: Mailbox, system: ProcessSystem) {
+  constructor(pid: PID, func: Task, args: any[], mailbox: Mailbox, system: ProcessSystem) {
     this.pid = pid
     this.func = func
     this.args = args

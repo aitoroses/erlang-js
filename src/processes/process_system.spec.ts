@@ -18,6 +18,7 @@ test(function* testSpawn(t) {
 
 test(function* testSpawnLink(t) {
   const pid = system.spawn_link(function*() {
+    let self = system.self()
     yield 1
   })
 
@@ -39,9 +40,11 @@ test(function* testSpawnMonitor (t) {
     yield 1
   })
 
+  const self = system.list()[0]
+
   t.is(system.list().length, 2)
   t.deepEqual(
     system.monitors.get(ref),
-    {monitor: system.list()[0], monitee: pid}
+    {monitor: self, monitee: pid}
   )
 })
