@@ -54,7 +54,7 @@ export class ProcessSystem implements IProcessSystem {
   public names = new Map<string, PID>()
   public links = new Map<PID, Set<any>>()
   public monitors = new Map<Reference, Monitor>()
-  public suspended = new Map<PID, Task>()
+  public suspended = new Map<PID, Function>()
 
   public current_process: Process | undefined
   public main_process_pid: PID | undefined
@@ -148,7 +148,7 @@ export class ProcessSystem implements IProcessSystem {
     }
   }
 
-  schedule(task: Task, pid?: PID) {
+  schedule(task: Function, pid?: PID) {
     const the_pid = pid != null ? pid : this.current_process && this.current_process.pid as PID
     if (the_pid) {
       this.scheduler.schedule(the_pid, task)
@@ -304,14 +304,14 @@ export class ProcessSystem implements IProcessSystem {
       (this.mailboxes.get(pid) as any).deliver(msg)
 
       if (this.suspended.has(pid)) {
-        let fun: Task = this.suspended.get(pid) as any
+        let task: Function = this.suspended.get(pid) as any
         this.suspended.delete(pid)
-        this.schedule(fun)
+        this.schedule(task, pid)
       }
     }
   }
 
-  receive(fun: Task, timeout = 0, timeoutFn = () => true) {
+  receive(fun: Function, timeout = 0, timeoutFn = () => true) {
     let DateTimeout: number | null = null
 
     if (timeout === 0 || timeout === Infinity) {
@@ -332,14 +332,14 @@ export class ProcessSystem implements IProcessSystem {
     return [States.SLEEP, duration]
   }
 
-  suspend(fun: Task) {
+  suspend(fun: Function) {
     if (this.current_process) {
       this.current_process.status = States.SUSPENDED
       this.suspended.set(this.current_process.pid, fun)
     }
   }
 
-  delay(fun: Task, time: number) {
+  delay(fun: Function, time: number) {
     if (this.current_process) {
       this.current_process.status = States.SLEEPING
       if (Number.isInteger(time)) {

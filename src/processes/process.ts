@@ -49,6 +49,12 @@ export class Process {
   start() {
     const function_scope = this
     let machine = this.main()
+
+    this.system.schedule(function() {
+      function_scope.system.set_current(function_scope.pid)
+      function_scope.run(machine, machine.next())
+    }, this.pid)
+
   }
 
   *main() {
@@ -101,5 +107,46 @@ export class Process {
     }
 
     return value
+  }
+
+  run(machine: IterableIterator<any>, step: IteratorResult<any>) {
+    const function_scope = this
+
+    if (!step.done) {
+      let value = step.value
+
+      if (is_sleep(value)) {
+
+        this.system.delay(function() {
+          function_scope.system.set_current(function_scope.pid)
+          function_scope.run(machine, machine.next())
+        }, value[1])
+
+      } else if (is_receive(value) && receive_timed_out(value)) {
+
+        let result = value[3]
+
+        this.system.schedule(function() {
+          function_scope.system.set_current(function_scope.pid)
+          function_scope.run(machine, machine.next(result))
+        })
+
+      } else if (is_receive(value)) {
+
+        let result = function_scope.receive(value[1])
+
+        if (result === States.NOMATCH) {
+          this.system.suspend(function() {
+            function_scope.system.set_current(function_scope.pid)
+            function_scope.run(machine, step)
+          })
+        } else {
+          this.system.schedule(function() {
+            function_scope.system.set_current(function_scope.pid)
+            function_scope.run(machine, machine.next())
+          })
+        }
+      }
+    }
   }
 }

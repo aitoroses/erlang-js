@@ -1,10 +1,9 @@
 import { PID } from '../erlang-types'
-import { Task } from './process'
 
 class ProcessQueue {
 
   private pid: PID
-  private tasks: Task[]
+  private tasks: Function[]
 
   constructor(pid: PID) {
     this.pid = pid
@@ -15,11 +14,11 @@ class ProcessQueue {
     return this.tasks.length === 0
   }
 
-  add(task: Task) {
+  add(task: Function) {
     this.tasks.push(task)
   }
 
-  next(): Task | undefined {
+  next(): Function | undefined {
     return this.tasks.shift()
   }
 }
@@ -36,16 +35,21 @@ export class Scheduler {
     this.run()
   }
 
+  addToQueue(pid: PID, task: Function) {
+    if (!this.queues.has(pid)) {
+      this.queues.set(pid, new ProcessQueue(pid))
+    }
+
+    let queue = this.queues.get(pid)
+    if (queue) {
+      queue.add(task)
+    }
+  }
+
   removePid(pid: PID) {
     this.isRunning = true
     this.queues.delete(pid)
     this.isRunning = false
-  }
-
-  addToQueue(pid: PID, task: Task) {
-    if (!this.queues.has(pid)) {
-      this.queues.set(pid, new ProcessQueue(pid))
-    }
   }
 
   run() {
@@ -54,7 +58,7 @@ export class Scheduler {
     } else {
       for (let [pid, queue] of this.queues) {
         let reductions = 0
-        while (queue && !queue.empty && reductions < this.reductions_per_process) {
+        while (queue && !queue.empty() && reductions < this.reductions_per_process) {
           let task = queue.next()
           this.isRunning = true
 
@@ -66,6 +70,8 @@ export class Scheduler {
             console.error(e)
             result = e
           }
+
+          this.isRunning = false
 
           if (result instanceof Error) {
             throw result
@@ -79,7 +85,15 @@ export class Scheduler {
     this.invokeLater(() => this.run())
   }
 
-  addToScheduler(pid: PID, task: Task, dueTime = 0) {
+  schedule(pid: PID, task: Function) {
+    this.addToScheduler(pid, () => task())
+  }
+
+  scheduleFuture(pid: PID, dueTime: number, task: Function) {
+    this.addToScheduler(pid, () => task(), dueTime)
+  }
+
+  private addToScheduler(pid: PID, task: Function, dueTime = 0) {
     const addIt = () => this.addToQueue(pid, task)
 
     if (dueTime === 0) {
@@ -87,14 +101,6 @@ export class Scheduler {
     } else {
       setTimeout(addIt, dueTime)
     }
-  }
-
-  schedule(pid: PID, task: Task) {
-    this.addToScheduler(pid, () => task())
-  }
-
-  scheduleFuture(pid: PID, dueTime: number, task: Task) {
-    this.addToScheduler(pid, () => task(), dueTime)
   }
 
 }
