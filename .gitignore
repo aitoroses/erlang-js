@@ -5,3 +5,4 @@ src/**.js
 coverage
 .nyc_output
 *.log
+.vscode

@@ -82,7 +82,11 @@ export class Process {
 
   signal(reason) {
     if (reason !== States.NORMAL) {
-      console.error(reason)
+      this.system.schedule(() => {
+        console.error(`
+        Error: Process ${this.pid} signaled with reason ${reason.toString()}
+        Origin PID: ${this.system.self()}`)
+      })
     }
 
     this.system.remove_proc(this.pid, reason)

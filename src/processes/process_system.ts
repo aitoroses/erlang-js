@@ -71,7 +71,7 @@ export class ProcessSystem implements IProcessSystem {
     this.set_current(this.main_process_pid)
   }
 
-  static* run(fun, args, context?: any) {
+  static * run(fun, args, context?: any) {
     if (fun.constructor.name === 'GeneratorFunction') {
       return yield* fun.apply(context, args)
     } else {
@@ -195,8 +195,12 @@ export class ProcessSystem implements IProcessSystem {
       let linkSet: Set<any> = this.links.get(pid) as any
       for (let linkpid of linkSet) {
         this.exit(linkpid, exitreason)
-        linkSet.delete(pid)
+        if (this.links.get(linkpid)) {
+          (this.links.get(linkpid) as any).delete(pid)
+        }
       }
+
+      this.links.delete(pid)
     }
   }
 
@@ -216,7 +220,7 @@ export class ProcessSystem implements IProcessSystem {
         }
       } else {
         this.send(this.current_process.pid, new Tuple(
-                                              'DOWN', ref, pid, real_pid, Symbol.for('noproc')))
+          'DOWN', ref, pid, real_pid, Symbol.for('noproc')))
       }
 
     } else {
@@ -235,42 +239,42 @@ export class ProcessSystem implements IProcessSystem {
     return false
   }
 
-  exit(one: PID | string, two?: string) {
-    let pid: PID | string
-    let reason: string | undefined
-    let process: Process | undefined
+  exit(one: PID | any, two?: any) {
+    let pid: PID = null as any
+    let reason: any = null as any
+    let process: Process = null as any
 
     if (two) {
       pid = one
       reason = two
-      process = this.pids.get(this.pidof(pid) as any)
-    }
+      process = this.pids.get(this.pidof(pid) as any) as any
 
-    if (process) {
-      if (
-        process.is_trapping_exits() ||
-        reason === (States.KILL as any) ||
-        reason === (States.NORMAL as any)
-      ) {
-        let mailbox = this.mailboxes.get(process.pid)
-        if (mailbox) {
+      if (!process) { return }
 
-          // Deliver exit to the process
-          mailbox.deliver(new Tuple(States.EXIT, this.pid() /* from */, reason))
-        }
+      if (process.is_trapping_exits() && (reason === States.KILL || reason === States.NORMAL)) {
+        let mailbox: Mailbox = this.mailboxes.get(process.pid) as any
+        mailbox.deliver(new Tuple(States.EXIT, this.pid() /* from */, reason))
+
       } else {
-        if (this.current_process) {
-          pid = this.current_process.pid
-          reason = one as string
-        }
+        process && process.signal(reason)
       }
 
-      for (let ref in process.monitors) {
-        let mons = this.monitors.get(ref as any)
-        if (mons) {
-          this.send(mons.monitor, new Tuple(
-                                        'DOWN', ref, mons['monitee'], reason))
-        }
+    } else {
+      if (this.current_process) {
+        pid = this.current_process.pid
+        reason = one as string
+        process = this.current_process
+
+        process.signal(reason)
+      }
+    }
+
+    // Monitors
+    for (let ref in process.monitors) {
+      let mons = this.monitors.get(ref as any)
+      if (mons) {
+        this.send(mons.monitor, new Tuple(
+          'DOWN', ref, mons['monitee'], reason))
       }
     }
   }
@@ -287,7 +291,7 @@ export class ProcessSystem implements IProcessSystem {
     } else {
       let pid = this.whereis(id)
       if (pid === null) {
-        throw(`Process name not registered: ${id} (${typeof id})`)
+        throw (`Process name not registered: ${id} (${typeof id})`)
       }
       return pid
     }
@@ -297,7 +301,7 @@ export class ProcessSystem implements IProcessSystem {
     return this.names.has(name) ? this.names.get(name) : undefined
   }
 
-  send(id: PID | Process | string , msg) {
+  send(id: PID | Process | string, msg) {
     const pid = this.pidof(id)
 
     if (pid) {
@@ -345,6 +349,12 @@ export class ProcessSystem implements IProcessSystem {
       if (Number.isInteger(time)) {
         this.scheduler.scheduleFuture(this.current_process.pid, time, fun)
       }
+    }
+  }
+
+  trap_exits() {
+    if (this.current_process) {
+      this.current_process.process_flag(Symbol.for('trap_exit'), true)
     }
   }
 

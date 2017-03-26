@@ -1,4 +1,7 @@
 import * as States from './states'
+import { ProcessSystem } from './process_system'
 
-export { States }
+const system = new ProcessSystem()
+
+export { States, system }
 export * from './process_system'
