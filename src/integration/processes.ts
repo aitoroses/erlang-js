@@ -1,22 +1,22 @@
 import { system } from '../processes'
 
-let pid1 = system.spawn(function*(){
+const pid1 = system.spawn(function*(){
   while (true) {
 
     yield system.receive(function(value){
       console.log(value)
     })
 
-    system.send(pid2, 'message from 1')
+    system.send(pid2, 'PING')
   }
 })
 
 system.register('Sally', pid1)
 
-let pid2 = system.spawn(function*() {
+const pid2 = system.spawn(function*() {
 
   while (true) {
-    system.send('Sally', 'message from 2')
+    system.send('Sally', 'PONG')
 
     yield system.receive(function(value){
       console.log(value)
