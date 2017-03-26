@@ -270,13 +270,14 @@ export class ProcessSystem implements IProcessSystem {
     }
 
     // Monitors
-    for (let ref in process.monitors) {
-      let mons = this.monitors.get(ref as any)
+    process.monitors.forEach(ref => {
+      console.log(ref)
+      let mons = this.monitors.get(ref)
       if (mons) {
         this.send(mons.monitor, new Tuple(
           'DOWN', ref, mons['monitee'], reason))
       }
-    }
+    })
   }
 
   pid(): PID {
