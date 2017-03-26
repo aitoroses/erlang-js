@@ -1,6 +1,6 @@
 import { test } from 'ava'
 import * as ErlantTypes from './erlang-types'
-import { ProcessSystem, States } from './processes'
+import { ProcessSystem, States, Logger } from './processes'
 
 test('erlang types can be used', (t) => {
   t.true(typeof ErlantTypes.PID === 'function')

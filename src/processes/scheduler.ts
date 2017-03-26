@@ -1,4 +1,5 @@
 import { PID } from '../erlang-types'
+import { Logger } from './logger'
 
 class ProcessQueue {
 
@@ -67,7 +68,7 @@ export class Scheduler {
           try {
             result = task && task()
           } catch (e) {
-            console.error(e)
+            Logger.error(e)
             result = e
           }
 

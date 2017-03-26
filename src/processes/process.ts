@@ -2,6 +2,7 @@ import { Mailbox } from './mailbox'
 import { ProcessSystem } from './process_system'
 import * as States from './states'
 import { PID, Reference } from '../erlang-types'
+import { Logger } from './logger'
 
 export type Monitor = {
   monitor: PID
@@ -63,7 +64,7 @@ export class Process {
     try {
       yield* this.func.apply(null, this.args)
     } catch (e) {
-      console.error(e)
+      Logger.error(e)
       retval = e
     }
 
@@ -83,8 +84,8 @@ export class Process {
   signal(reason) {
     if (reason !== States.NORMAL) {
       this.system.schedule(() => {
-        console.error(`
-        Error: Process ${this.pid} signaled with reason ${reason.toString()}
+        Logger.error(`
+        Exit: Process ${this.pid} signaled with reason ${reason.toString()}
         Origin PID: ${this.system.self()}`)
       })
     }

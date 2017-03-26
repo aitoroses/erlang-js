@@ -271,7 +271,6 @@ export class ProcessSystem implements IProcessSystem {
 
     // Monitors
     process.monitors.forEach(ref => {
-      console.log(ref)
       let mons = this.monitors.get(ref)
       if (mons) {
         this.send(mons.monitor, new Tuple(
