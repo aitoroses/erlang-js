@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.5.1"></a>
+## [0.5.1](https://github.com/aitoroses/erlang-js/compare/v0.5.0...v0.5.1) (2017-03-26)
+
+
+### Bug Fixes
+
+* **process-exit:** Fixed how processes exit and trap errors ([36eac6d](https://github.com/aitoroses/erlang-js/commit/36eac6d))
+
+
+
 <a name="0.5.0"></a>
 # [0.5.0](https://github.com/aitoroses/erlang-js/compare/v0.4.1...v0.5.0) (2017-03-01)
 
