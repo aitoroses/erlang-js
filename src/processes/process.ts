@@ -148,7 +148,7 @@ export class Process {
         } else {
           this.system.schedule(function() {
             function_scope.system.set_current(function_scope.pid)
-            function_scope.run(machine, machine.next())
+            function_scope.run(machine, machine.next(result))
           })
         }
       }
