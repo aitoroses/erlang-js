@@ -140,14 +140,22 @@ export abstract class ActorSystem {
     const pid = self.procSystem.spawn_link(function* () {
       while (true) {
         yield self.procSystem.receive(async function (request) {
-          if (request.ref && request.sender && request.message) {
-            self.sender = new ActorRef(request.sender, self)
-            state = await supervisor.receive(request.message, state)
-            self.sender = null
-          } else {
-            state = await supervisor.receive(request, state)
+          try {
+            if (request.ref && request.sender && request.message) {
+              self.sender = new ActorRef(request.sender, self)
+              state = await supervisor.receive(request.message, state)
+              self.sender = null
+            } else {
+              state = await supervisor.receive(request, state)
+            }
+            Object.freeze(state)
+          } catch (e) {
+            const messageKind = Object.getPrototypeOf(request.message).constructor.name
+            const message = JSON.stringify(request.message)
+            console.error(`${spec.actorClass.name} failed to receive message from inbox ${messageKind} ${message}`)
+            console.error(e)
+            self.procSystem.exit(pid, States.KILL)
           }
-          Object.freeze(state)
         })
       }
     })
@@ -186,14 +194,22 @@ export abstract class ActorSystem {
     const pid = self.procSystem.spawn_link(function* () {
       while (true) {
         yield self.procSystem.receive(async function (request) {
-          if (request.ref && request.sender && request.message) {
-            self.sender = new ActorRef(request.sender, self)
-            state = await actor.receive(request.message, state)
-            self.sender = null
-          } else {
-            state = await actor.receive(request, state)
+          try {
+            if (request.ref && request.sender && request.message) {
+              self.sender = new ActorRef(request.sender, self)
+              state = await actor.receive(request.message, state)
+              self.sender = null
+            } else {
+              state = await actor.receive(request, state)
+            }
+            Object.freeze(state)
+          } catch (e) {
+            const messageKind = Object.getPrototypeOf(request.message).constructor.name
+            const message = JSON.stringify(request.message)
+            console.error(`${spec.actorClass.name} failed to receive message from inbox ${messageKind} ${message}`)
+            console.error(e)
+            self.procSystem.exit(pid, States.KILL)
           }
-          Object.freeze(state)
         })
       }
     })
