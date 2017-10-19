@@ -13,7 +13,7 @@ test('ProcessSystem#send/receive', (t) => {
 
     const pid1 = system.spawn(function*() {
       while (true) {
-        yield system.receive(function(value){
+        yield system.receive(function(value) {
           received = received + 1
           if (received === 5) {
             system.send(pid2, 'PONG')
@@ -22,13 +22,15 @@ test('ProcessSystem#send/receive', (t) => {
       }
     })
 
-    const pid2 = system.spawn(function*(){
+    const pid2 = system.spawn(function*() {
       yield system.receive(resolve)
     })
 
     for (let i = 0; i < 5; i++) {
       system.send(pid1, 'PING')
     }
+
+    t.pass()
   })
 
 })

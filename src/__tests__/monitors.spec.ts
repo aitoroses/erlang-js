@@ -1,5 +1,8 @@
 import { test } from 'ava'
-import { ProcessSystem, States, Logger, Tuple } from '../'
+import { Logger } from '../processes/logger'
+import { ProcessSystem } from '../processes/process_system'
+import * as States from '../processes/states'
+import { Tuple } from '../types/tuple'
 
 Logger.disable() // Disable the logger globally
 

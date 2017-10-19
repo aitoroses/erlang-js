@@ -36,7 +36,7 @@ test(function* testSpawnLink(t) {
 })
 
 test(function* testSpawnMonitor (t) {
-  const [pid, ref] = system.spawn_monitor(function*(){
+  const [pid, ref] = system.spawn_monitor(function*() {
     yield 1
   })
 

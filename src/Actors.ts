@@ -1,4 +1,4 @@
-import {ActorRef, ActorSystem} from './ActorSystem'
+import { ActorSystem } from './ActorSystem'
 import { Spec } from './Spec'
 
 export type Constructor<A> = {

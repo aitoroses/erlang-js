@@ -1,6 +1,6 @@
-import {ActorSystem} from '../../akka/ActorSystem'
-import {supervisor, SupervisorSpec} from '../../akka/Spec'
-import {PingPongSupervisor} from '../akka/PingPongSupervisor'
+import { ActorSystem } from '../../ActorSystem'
+import { supervisor, SupervisorSpec } from '../../Spec'
+import { PingPongSupervisor } from '../akka/PingPongSupervisor'
 
 /**
  * Create an ActorSystem that provides a SupervisionTree with PingPongSupervisor

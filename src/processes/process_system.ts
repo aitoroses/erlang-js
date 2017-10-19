@@ -1,4 +1,4 @@
-import { PID, Tuple, Reference } from '../erlang-types'
+import { PID, Tuple, Reference } from '../types'
 import { Process, Monitor, Task } from './process'
 import { Mailbox } from './mailbox'
 import { Scheduler } from './scheduler'
@@ -19,7 +19,7 @@ export interface IProcessSystem {
   registered(): Array<string>
   pid(): PID
   pidof(pid: PID | Process | string): PID | undefined
-  send<T>(pid: PID, msg: T): T
+  send<T>(pid: PID | Process | string, msg: T)
   receive(fun: Task, timeout?: number, timeoutFn?: Function)
   sleep(duration: number)
   exit(reason)
@@ -30,10 +30,8 @@ export interface IProcessSystem {
   put(key: string, value): void
   get(key, default_value?)
   get_process_dict()
-  get_keys()
-  get_keys(value)
-  erase()
-  erase(key)
+  get_keys(value?)
+  erase(key?)
   is_alive(pid: PID)
   make_ref()
   list(): PID[]
@@ -291,7 +289,7 @@ export class ProcessSystem implements IProcessSystem {
     } else {
       let pid = this.whereis(id)
       if (pid === null) {
-        throw (`Process name not registered: ${id} (${typeof id})`)
+        throw new Error((`Process name not registered: ${id} (${typeof id})`))
       }
       return pid
     }
@@ -301,7 +299,7 @@ export class ProcessSystem implements IProcessSystem {
     return this.names.has(name) ? this.names.get(name) : undefined
   }
 
-  send(id: PID | Process | string, msg) {
+  send<T>(id: PID | Process | string, msg) {
     const pid = this.pidof(id)
 
     if (pid) {

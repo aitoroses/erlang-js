@@ -1,9 +1,9 @@
 import { system } from '../processes'
 
-const pid1 = system.spawn(function*(){
+const pid1 = system.spawn(function*() {
   while (true) {
 
-    yield system.receive(function(value){
+    yield system.receive(function(value) {
       console.log(value)
     })
 
@@ -18,7 +18,7 @@ const pid2 = system.spawn(function*() {
   while (true) {
     system.send('Sally', 'PONG')
 
-    yield system.receive(function(value){
+    yield system.receive(function(value) {
       console.log(value)
     })
   }

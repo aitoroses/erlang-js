@@ -1,8 +1,8 @@
-import {Spec, SupervisorSpec, WorkerSpec} from './Spec'
-import {Actor, ActorConstructor, SupervisorActor} from './Actors'
-import {ProcessSystem} from '../processes/process_system'
-import {PID} from '../erlang-types/pid'
-import * as States from '../processes/states'
+import { Spec, SupervisorSpec, WorkerSpec } from './Spec'
+import { Actor, ActorConstructor, SupervisorActor } from './Actors'
+import { ProcessSystem } from './processes/process_system'
+import { PID } from './types/pid'
+import * as States from './processes/states'
 
 export type SupervisionTree = {
   pid: PID

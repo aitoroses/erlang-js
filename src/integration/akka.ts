@@ -1,6 +1,6 @@
 
-import {PingPongActorSystem} from './akka/PingPongActorSystem'
-import {GetResults, PingPongSupervisor, StartMatch} from './akka/PingPongSupervisor'
+import { PingPongActorSystem } from './akka/PingPongActorSystem'
+import { GetResults, PingPongSupervisor, StartMatch } from './akka/PingPongSupervisor'
 
 /**
  * Instantiate the system

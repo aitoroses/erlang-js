@@ -1,7 +1,7 @@
 import { Mailbox } from './mailbox'
 import { ProcessSystem } from './process_system'
 import * as States from './states'
-import { PID, Reference } from '../erlang-types'
+import { PID, Reference } from '../types'
 import { Logger } from './logger'
 
 export type Monitor = {

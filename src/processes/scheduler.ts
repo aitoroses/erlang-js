@@ -1,4 +1,4 @@
-import { PID } from '../erlang-types'
+import { PID } from '../types'
 import { Logger } from './logger'
 
 class ProcessQueue {

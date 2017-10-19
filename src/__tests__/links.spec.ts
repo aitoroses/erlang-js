@@ -42,7 +42,7 @@ test('ProcessSystem#trap_exit', (t) => {
         yield system.exit(States.KILL)
       })
 
-      t.true(system.list().length === 3)
+      t.true(system.list().length === 2)
 
       yield system.sleep(100000) // Keep alive
     })

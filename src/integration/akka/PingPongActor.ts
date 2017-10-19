@@ -1,5 +1,5 @@
-import {Actor} from '../../akka/Actors'
-import {Case, Match} from '../../akka/match'
+import { Actor } from '../../Actors'
+import { Case, Match } from '../../match'
 
 export abstract class PingPongMessage {}
 export class Ping extends PingPongMessage {}
