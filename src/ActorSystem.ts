@@ -128,67 +128,13 @@ export abstract class ActorSystem {
     return go(typeof actorClass === 'string' ? checkString : checkClass, actorClass, this.props, true)
   }
 
-  private initializeSupervisorSpec(spec: SupervisorSpec<any>) {
-    const self = this
-    const {actorClass, args, options} = spec
-    const supervisor: SupervisorActor<any, any> = new actorClass()
-    supervisor.context = this
-    let state = supervisor.init(args)
-    Object.freeze(state)
-
-    // Create a proc
-    const pid = self.procSystem.spawn_link(function* () {
-      while (true) {
-        yield self.procSystem.receive(async function (request) {
-          try {
-            if (request.ref && request.sender && request.message) {
-              self.sender = new ActorRef(request.sender, self)
-              state = await supervisor.receive(request.message, state)
-              self.sender = null
-            } else {
-              state = await supervisor.receive(request, state)
-            }
-            Object.freeze(state)
-          } catch (e) {
-            const messageKind = Object.getPrototypeOf(request.message).constructor.name
-            const message = JSON.stringify(request.message)
-            console.error(`${spec.actorClass.name} failed to receive message from inbox ${messageKind} ${message}`)
-            console.error(e)
-            self.procSystem.exit(pid, States.KILL)
-          }
-        })
-      }
-    })
-
-    if (spec.options && spec.options.name) {
-      this.procSystem.register(spec.options.name, pid)
-    }
-
-    const children: Spec<any>[] = supervisor.start()
-
-    const props: SupervisionTree = {
-      instance: supervisor,
-      pid,
-      children: []
-    }
-
-    for (const child of children) {
-      if (child.actorClass instanceof SupervisorActor) {
-        props.children.push(this.initializeSupervisorSpec(child))
-      } else {
-        props.children.push(this.initializeWorkerSpec(child))
-      }
-    }
-
-    return props
-  }
-
-  private initializeWorkerSpec(spec: WorkerSpec<any>) {
+  private initializeSpec(spec: Spec<any>): SupervisionTree {
     const self = this
     const {actorClass, args, options} = spec
     const actor: Actor<any, any> = new actorClass()
     actor.context = this
     let state = actor.init(args)
+    Object.freeze(state)
 
     // Create a proc
     const pid = self.procSystem.spawn_link(function* () {
@@ -225,5 +171,25 @@ export abstract class ActorSystem {
     }
 
     return props
+  }
+
+  private initializeSupervisorSpec(spec: SupervisorSpec<any>) {
+    const props = this.initializeSpec(spec)
+
+    const children: Spec<any>[] = (props as any).instance.start()
+
+    for (const child of children) {
+      if (child.actorClass instanceof SupervisorActor) {
+        props.children.push(this.initializeSupervisorSpec(child))
+      } else {
+        props.children.push(this.initializeWorkerSpec(child))
+      }
+    }
+
+    return props
+  }
+
+  private initializeWorkerSpec(spec: WorkerSpec<any>) {
+    return this.initializeSpec(spec)
   }
 }
