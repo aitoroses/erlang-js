@@ -1,75 +1,13 @@
 import { Spec, SupervisorSpec, WorkerSpec } from './Spec'
 import { Actor, ActorConstructor, SupervisorActor } from './Actors'
 import { ProcessSystem } from './processes/process_system'
-import { PID } from './types/pid'
 import * as States from './processes/states'
-
-export type SupervisionTree = {
-  pid: PID
-  children: any[]
-  instance: Actor<any, any>
-}
-
-export class ActorRef<Message> {
-  constructor(private pid: PID, private system: ActorSystem) {}
-
-  tell(message: Message, ms?: number): void {
-    const procSystem: ProcessSystem = (this.system as any).procSystem
-    const request = {
-      ref: procSystem.make_ref(),
-      sender: procSystem.self(),
-      message
-    }
-    if (ms !== undefined) {
-      setTimeout(() => {
-        procSystem.send(this.pid, request)
-      }, ms)
-    } else {
-      procSystem.send(this.pid, request)
-    }
-  }
-
-  ask(message: Message, timeout: number = 5000) {
-    const system = this.system
-    const procSystem: ProcessSystem = (this.system as any).procSystem
-    const self = this
-    return new Promise((resolve, reject) => {
-
-      // Spawn a listener process
-      const taskPid = procSystem.spawn_link(function* () {
-
-        // Prepare an error timeout
-        const timeoutId = setTimeout(() => {
-          procSystem.exit(States.KILL)
-          reject(States.KILL)
-        }, timeout)
-
-        // Send a message to the refering actor
-
-        const request = {
-          sender: taskPid,
-          ref: procSystem.make_ref(),
-          message
-        }
-
-        procSystem.send(self.pid, request)
-        yield procSystem.receive(function (response) {
-          resolve(response.message)
-          clearTimeout(timeoutId)
-          return false
-        })
-      })
-
-      // Trap exit of child process
-      procSystem.trap_exits()
-    })
-  }
-}
+import { ActorRef } from './ActorRef'
+import { SupervisionTree } from './SupervisionTree'
 
 export abstract class ActorSystem {
 
   sender: ActorRef<any> | null
-
   private procSystem: ProcessSystem = new ProcessSystem()
   private props: SupervisionTree
 
@@ -164,13 +102,7 @@ export abstract class ActorSystem {
       this.procSystem.register(spec.options.name, pid)
     }
 
-    const props: SupervisionTree = {
-      instance: actor,
-      pid,
-      children: []
-    }
-
-    return props
+    return new SupervisionTree(pid, [], actor)
   }
 
   private initializeSupervisorSpec(spec: SupervisorSpec<any>) {
