@@ -26,6 +26,10 @@ export class PingPongActor extends Actor<PingPongMessage, PingPongState> {
     }
   }
 
+  increment(state: PingPongState) {
+    return { ...state, touches: state.touches + 1 }
+  }
+
   /**
    * Receive ping/pong messages
    * Actors are signaled to start the match
@@ -35,9 +39,9 @@ export class PingPongActor extends Actor<PingPongMessage, PingPongState> {
    * @returns {PingPongState}
    */
   receive(msg: PingPongMessage, state: PingPongState): PingPongState {
+
     const isPing = state.name === 'ping'
     const otherPlayer = this.context.actorOf(isPing ? 'pong' : 'ping')
-    const nextState = () => ({...state, touches: state.touches + 1})
 
     return Match<PingPongState | void>(
       Case(Start, () => {
@@ -47,23 +51,22 @@ export class PingPongActor extends Actor<PingPongMessage, PingPongState> {
 
       Case(Ping, () => {
         if (!isPing) {
-          otherPlayer.tell(new Pong())
-          return nextState()
+          otherPlayer.tell(new Pong(), 10)
+          return this.increment(state)
         }
       }),
 
       Case(Pong, () => {
         if (isPing) {
-          otherPlayer.tell(new Ping())
-          return nextState()
+          otherPlayer.tell(new Ping(), 10)
+          return this.increment(state)
         }
       }),
 
       Case(GetResult, () => {
-        if (this.context.sender) {
-          this.context.sender.tell(state.touches)
-        }
+        this.context.sender.respond(state.touches)
       })
+
     )(msg) || state
   }
 }

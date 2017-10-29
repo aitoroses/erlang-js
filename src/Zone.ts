@@ -1,28 +1,30 @@
-
-interface ZoneSpec {
+export interface ZoneSpec {
   name: string
   onBeforeTask: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
   onAfterTask: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
   onHandleError: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
 }
 
-interface ZoneSpecArgs {
+export interface ZoneSpecArgs {
   name: string
   onBeforeTask?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
   onAfterTask?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
   onHandleError?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
 }
 
-type ZoneDelegate = {
+export type ZoneDelegate = {
   handleError: (zone: Zone, e: Error) => void
 }
 
-const noop: any = function() {} // tslint:disable-line
+const noop: any = function () {
+} // tslint:disable-line
 
 const emptySpecHooks = {
   onBeforeTask: noop,
   onAfterTask: noop,
-  onHandleError: noop
+  onHandleError: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => {
+    console.error(new Error(this.name + ': ' + error.message))
+  }
 }
 
 const WrapPlugins = {
@@ -47,41 +49,51 @@ const WrapPlugins = {
       }
       return () => HTMLElement.prototype.addEventListener = addEventListener
     } else {
-      return () => {} // tslint:disable-line
+      return () => {
+      } // tslint:disable-line
     }
   },
 
   Promise(zone: Zone) {
     const promise: any = Promise
+    const proto = Promise.prototype
     const ctor = Promise.constructor
     const thenfn = Promise.prototype.then
     const catchfn = Promise.prototype.catch
 
-    ;(global as any).Promise = function (...args) {
+    const ZonePromise: any = function ZonePromise(...args) {
       args[0] = zone.wrap(args[0])
       return new promise(...args)
     }
 
-    Promise.constructor = function (...args) {
+    ;(global as any).Promise = ZonePromise
+
+    ZonePromise.prototype = Object.create(proto)
+    ZonePromise.reject = promise.reject
+    ZonePromise.resolve = promise.resolve
+    ZonePromise.all = promise.all
+    ZonePromise.race = promise.race
+
+    ZonePromise.constructor = function (...args) {
       args[0] = zone.wrap(args[0])
       return ctor.apply(this, args)
     }
 
-    Promise.prototype.then = function (...args) {
+    ZonePromise.prototype.then = function (...args) {
       args[0] = zone.wrap(args[0])
       return thenfn.apply(this, args)
     }
 
-    Promise.prototype.catch = function (...args) {
+    ZonePromise.prototype.catch = function (...args) {
       args[0] = zone.wrap(args[0])
       return catchfn.apply(this, args)
     }
 
     return () => {
       (global as any).Promise = promise
-      Promise.constructor = ctor
+      /*Promise.constructor = ctor
       Promise.prototype.then = thenfn
-      Promise.prototype.catch = catchfn
+      Promise.prototype.catch = catchfn*/
     }
   }
 }
@@ -93,7 +105,7 @@ export class Zone {
   private zoneSpec: ZoneSpec
 
   constructor(zoneSpec: ZoneSpecArgs) {
-    this.zoneSpec = Object.assign({}, emptySpecHooks, zoneSpec)
+    this.zoneSpec = Object.assign({}, emptySpecHooks, zoneSpec, Object.getPrototypeOf(zoneSpec))
     this.name = zoneSpec.name
   }
 
@@ -138,7 +150,7 @@ export class Zone {
     let result: A | undefined = undefined
     try {
       this.zoneSpec.onBeforeTask(parentDelegate, parentZone, this, delegate, source)
-      result = fn()
+      result = fn(...args)
       this.zoneSpec.onBeforeTask(parentDelegate, parentZone, this, delegate, source)
     } catch (error) {
       this.zoneSpec.onHandleError(parentDelegate, parentZone, this, delegate, source, error)

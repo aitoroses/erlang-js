@@ -1,5 +1,5 @@
 import { test } from 'ava'
-import { Mailbox } from './mailbox'
+import { Mailbox } from './Mailbox'
 
 test('mailbox', t => {
   const m = new Mailbox()

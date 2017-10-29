@@ -18,11 +18,12 @@ zoneB.run(() => {
     }
   }).run(() => {
 
-    new Promise(() => {
-      throw Error('What?')
+    new Promise(resolve => {
+      // throw Error('What?')
+      resolve(2)
     })
-    .then(() => {
-      console.log('then')
+    .then((v) => {
+      console.log('then ' + 2)
     })
     .catch((e) => {
       console.error(e)

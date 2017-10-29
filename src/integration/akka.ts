@@ -14,10 +14,3 @@ const system = new PingPongActorSystem()
  */
 let supervisorRef = system.actorOf(PingPongSupervisor)
 supervisorRef.tell(new StartMatch())
-
-/**
- * Each second evaluate results
- */
-setInterval(async () => {
-  console.log(await supervisorRef.ask(new GetResults()))
-}, 1000)

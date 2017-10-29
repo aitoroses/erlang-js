@@ -1,18 +1,24 @@
-import { Spec, SupervisorSpec, WorkerSpec } from './Spec'
-import { Actor, ActorConstructor, SupervisorActor } from './Actors'
-import { ProcessSystem } from './processes/process_system'
-import * as States from './processes/states'
-import { ActorRef } from './ActorRef'
-import { SupervisionTree } from './SupervisionTree'
+import {Spec, SupervisorSpec, WorkerSpec} from './Spec'
+import {Actor, ActorConstructor, SupervisorActor} from './Actors'
+import {ActorRef} from './ActorRef'
+import {SupervisionTree} from './SupervisionTree'
+import {Zone} from './Zone'
+import {Scheduler, GlobalScheduler, ExecutionModel} from 'funfix'
+import {ActorZone} from './ActorZone'
 
 export abstract class ActorSystem {
 
-  sender: ActorRef<any> | null
-  private procSystem: ProcessSystem = new ProcessSystem()
+  sender: ActorRef<any>
+  current: Actor<any, any> | null
+  scheduler: Scheduler = new GlobalScheduler(false, ExecutionModel.synchronous())
+  private messageProcessingScheduled: boolean = false
   private props: SupervisionTree
 
   constructor() {
-    this.initialize()
+    Zone.current.fork({
+      name: 'ActorSystemZone'
+    })
+    .run(() => this.initialize())
   }
 
   abstract start(): SupervisorSpec<any>
@@ -29,84 +35,48 @@ export abstract class ActorSystem {
       throw Error('ActorSystem is not initialized.')
     }
 
-    const go = (checkerFn: Function, actorClass: ActorConstructor<any> | string, node: SupervisionTree, isRoot: boolean) => {
-      if (checkerFn(actorClass, node)) {
-        return createActorRef(node)
-      } else {
-        for (const child of node.children) {
-          const props = go(checkerFn, actorClass, child, false)
-          if (props) {
-            return createActorRef(props)
-          }
-        }
-
-        if (isRoot) {
-          if (typeof actorClass === 'string') {
-            throw Error(`Not found an actor called ${actorClass}`)
-          } else {
-            throw Error(`Not found an actor of type ${actorClass.name}`)
-          }
-        }
-      }
+    const checkString = (actorClass: string) => (props: SupervisionTree) => {
+      return actorClass === props.name
     }
 
-    function checkString(actorClass: string, props: SupervisionTree) {
-      const pid = self.procSystem.pidof(actorClass)
-      return pid === props.pid
-    }
-
-    function checkClass(actorClass: ActorConstructor<any>, props: SupervisionTree) {
+    const checkClass = (actorClass: ActorConstructor<any>) => (props: SupervisionTree) => {
       return props.instance instanceof actorClass
     }
 
     const createActorRef = (props: SupervisionTree) => {
-      return new ActorRef(props.pid, this)
+      return new ActorRef(props.instance, this)
     }
 
-    return go(typeof actorClass === 'string' ? checkString : checkClass, actorClass, this.props, true)
+    const resultingActor =
+      this.props.find(checkString(actorClass as string)) ||
+      this.props.find(checkClass(actorClass as ActorConstructor<any>))
+
+    if (resultingActor) {
+      return createActorRef(resultingActor)
+    } else {
+      if (typeof actorClass === 'string') {
+        throw Error(`Not found an actor called ${actorClass}`)
+      } else {
+        throw Error(`Not found an actor of type ${actorClass.name}`)
+      }
+    }
   }
 
-  private initializeSpec(spec: Spec<any>): SupervisionTree {
-    const self = this
-    const {actorClass, args, options} = spec
-    const actor: Actor<any, any> = new actorClass()
-    actor.context = this
-    let state = actor.init(args)
-    Object.freeze(state)
-
-    // Create a proc
-    const pid = self.procSystem.spawn_link(function* () {
-      while (true) {
-        yield self.procSystem.receive(async function (request) {
-          try {
-            if (request.ref && request.sender && request.message) {
-              self.sender = new ActorRef(request.sender, self)
-              state = await actor.receive(request.message, state)
-              self.sender = null
-            } else {
-              state = await actor.receive(request, state)
-            }
-            Object.freeze(state)
-          } catch (e) {
-            const messageKind = Object.getPrototypeOf(request.message).constructor.name
-            const message = JSON.stringify(request.message)
-            console.error(`${spec.actorClass.name} failed to receive message from inbox ${messageKind} ${message}`)
-            console.error(e)
-            self.procSystem.exit(pid, States.KILL)
-          }
+  private subscribeToMessages(actor) {
+    actor.mailbox.subscribe(() => {
+      if (!this.messageProcessingScheduled) {
+        this.scheduler.scheduleOnce(0, () => {
+          this.processMessages()
+          this.messageProcessingScheduled = false
         })
+        this.messageProcessingScheduled = true
       }
     })
-
-    if (spec.options && spec.options.name) {
-      this.procSystem.register(spec.options.name, pid)
-    }
-
-    return new SupervisionTree(pid, [], actor)
   }
 
   private initializeSupervisorSpec(spec: SupervisorSpec<any>) {
-    const props = this.initializeSpec(spec)
+    const props = SupervisionTree.createFromSpec(spec, null, this)
+    this.subscribeToMessages(props.instance)
 
     const children: Spec<any>[] = (props as any).instance.start()
 
@@ -114,14 +84,42 @@ export abstract class ActorSystem {
       if (child.actorClass instanceof SupervisorActor) {
         props.children.push(this.initializeSupervisorSpec(child))
       } else {
-        props.children.push(this.initializeWorkerSpec(child))
+        props.children.push(this.initializeWorkerSpec(child, props))
       }
     }
 
     return props
   }
 
-  private initializeWorkerSpec(spec: WorkerSpec<any>) {
-    return this.initializeSpec(spec)
+  private initializeWorkerSpec(spec: WorkerSpec<any>, parent: SupervisionTree) {
+    const props = SupervisionTree.createFromSpec(spec, parent, this)
+    this.subscribeToMessages(props.instance)
+    return props
+  }
+
+  private processMessages() {
+    const REDUCTIONS_PER_ACTOR = 8
+    /**
+     * Take every actor messages and run their receive method inside a zone
+     */
+    this.props.forEach(s => {
+      const actor = s.instance
+      const messages = (actor as any).mailbox.take(REDUCTIONS_PER_ACTOR)
+      messages.forEach(messageConsumable => {
+        messageConsumable(({ message, sender, ref }) => {
+          const actorZone = new ActorZone(actor, sender, ref)
+          Zone.current.fork(actorZone).run(() => {
+            const resultState = actor.receive(message, actor.state)
+            if (resultState) {
+              Promise.resolve(resultState)
+                .then(nextState => {
+                  Object.freeze(nextState)
+                  actor.state = nextState
+                })
+            }
+          })
+        })
+      })
+    })
   }
 }

@@ -29,6 +29,15 @@ export class PingPongSupervisor extends SupervisorActor<PingPongSMessages, Super
    * @returns {SupervisorState}
    */
   init(name: string): SupervisorState {
+
+    /**
+     * Each second evaluate results
+     */
+    setInterval(async () => {
+      const selfRef = this.getRef()
+      console.log(await selfRef.ask(new GetResults()))
+    }, 1000)
+
     return {
       name
     }
@@ -41,24 +50,24 @@ export class PingPongSupervisor extends SupervisorActor<PingPongSMessages, Super
    * @returns {Promise<SupervisorState>}
    */
   async receive(msg: PingPongSMessages, state: SupervisorState) {
+
     const pingRef: any = this.context.actorOf('ping')
     const pongRef: any = this.context.actorOf('pong')
 
     Match<any>(
+
       Case(StartMatch, () => {
         pingRef.tell(new Start())
         console.log('Supervisor started match')
       }),
+
       Case(GetResults, async (a) => {
-        const sender = this.context.sender
         const [ping, pong] = await Promise.all([
           pingRef.ask(new GetResult()),
           pongRef.ask(new GetResult())
         ])
 
-        if (sender) {
-          sender.tell({ping, pong})
-        }
+        console.log({ ping, pong })
       })
     )(msg)
 

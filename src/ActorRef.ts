@@ -1,61 +1,71 @@
-import { PID } from './types/pid'
-import { ProcessSystem } from './processes/process_system'
-import * as States from './processes/states'
+import { Actor } from './Actors'
+import { Reference } from './types/reference'
 import { ActorSystem } from './ActorSystem'
+import { Mailbox } from './Mailbox'
 
 export class ActorRef<Message> {
-  constructor(private pid: PID, private system: ActorSystem) {
-  }
+
+  constructor(private target: Actor<Message, any>, private system: ActorSystem) {}
 
   tell(message: Message, ms?: number): void {
-    const procSystem: ProcessSystem = (this.system as any).procSystem
+
+    if (!this.system.current) {
+      throw Error('Only an actor can Ref.ask(...) another actor')
+    }
+
     const request = {
-      ref: procSystem.make_ref(),
-      sender: procSystem.self(),
+      sender: this.system.current && this.system.current.getRef(),
       message
     }
+
+    const deliver = () => (this.target as any).mailbox.deliver(request)
+
     if (ms !== undefined) {
       setTimeout(() => {
-        procSystem.send(this.pid, request)
+        deliver()
       }, ms)
     } else {
-      procSystem.send(this.pid, request)
+      deliver()
     }
   }
 
   ask(message: Message, timeout: number = 5000) {
-    const system = this.system
-    const procSystem: ProcessSystem = (this.system as any).procSystem
-    const self = this
+    if (!this.system.current) {
+      throw Error('Only an actor can Ref.ask(...) another actor')
+    }
+
     return new Promise((resolve, reject) => {
 
-      // Spawn a listener process
-      const taskPid = procSystem.spawn_link(function* () {
+      // Prepare an error timeout
+      const timeoutId = setTimeout(() => {
+        reject('timeout')
+      }, timeout)
 
-        // Prepare an error timeout
-        const timeoutId = setTimeout(() => {
-          procSystem.exit(States.KILL)
-          reject(States.KILL)
-        }, timeout)
+      // Send a message to the refering actor
 
-        // Send a message to the refering actor
+      const request = {
+        ref: new Reference(),
+        sender: this.system.current && this.system.current.getRef(),
+        message
+      }
 
-        const request = {
-          sender: taskPid,
-          ref: procSystem.make_ref(),
-          message
-        }
+      const mailbox: Mailbox = (this.target as any).mailbox
+      mailbox.deliver(request)
 
-        procSystem.send(self.pid, request)
-        yield procSystem.receive(function (response) {
-          resolve(response.message)
+      const askingMailbox: Mailbox = (this.system.current as any).mailbox
+      const subscription = askingMailbox.subscribe((response) => {
+        if (response.ref === request.ref) {
           clearTimeout(timeoutId)
-          return false
-        })
+          subscription()
+          resolve(response.message)
+        }
       })
+    })/*.catch((e) => {
+      debugger
+    })*/
+  }
 
-      // Trap exit of child process
-      procSystem.trap_exits()
-    })
+  respond(response) {
+    throw Error(`Cannot respond to message in ${this.target.toString()}`)
   }
 }

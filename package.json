@@ -23,6 +23,7 @@
     "webpack": "^3.8.1"
   },
   "dependencies": {
-    "@types/webpack": "^3.0.13"
+    "@types/webpack": "^3.0.13",
+    "funfix": "^6.2.2"
   }
 }
