@@ -1,5 +1,5 @@
-import { Actor } from '../../Actors'
-import { Case, Match } from '../../match'
+import { Actor } from '@akka/core'
+import { Case, Match } from '@akka/core'
 
 export abstract class PingPongMessage {
 }

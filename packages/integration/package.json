@@ -1,0 +1,27 @@
+{
+  "name": "@akka/integration",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "author": "Aitor Oses <aitor.oses@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w",
+    "lint": "tslint --fix src/**/*.ts",
+    "test": "tsc && ava lib/**/*.spec.js",
+    "test:watch": "ava -w lib/**/*.spec.js",
+    "dev": "run-p build:watch test:watch"
+  },
+  "devDependencies": {
+    "ava": "^0.22.0",
+    "npm-run-all": "^4.1.1",
+    "tslint": "^5.7.0",
+    "tslint-config-standard": "^6.0.1",
+    "typescript": "^2.5.3"
+  },
+  "dependencies": {
+    "@akka/zone": "^0.0.1",
+    "@akka/core": "^0.0.1"
+  }
+}

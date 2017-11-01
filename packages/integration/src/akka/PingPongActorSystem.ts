@@ -1,5 +1,5 @@
-import { ActorSystem } from '../../ActorSystem'
-import { supervisor, SupervisorSpec } from '../../Spec'
+import { ActorSystem } from '@akka/core'
+import { supervisor, SupervisorSpec } from '@akka/core'
 import { PingPongSupervisor } from './PingPongSupervisor'
 
 /**

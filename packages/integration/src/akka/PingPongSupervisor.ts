@@ -1,6 +1,4 @@
-import { SupervisorActor } from '../../Actors'
-import { Spec, worker } from '../../Spec'
-import { Case, Match } from '../../match'
+import { SupervisorActor, Spec, worker, Case, Match } from '@akka/core'
 import { GetResult, PingPongActor, Start } from './PingPongActor'
 
 export type SupervisorState = {
