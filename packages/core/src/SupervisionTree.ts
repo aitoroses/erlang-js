@@ -3,7 +3,7 @@ import { Actor } from './Actors'
 import { Spec } from './Spec'
 import { ActorSystem } from './ActorSystem'
 import { ActorZone } from './ActorZone'
-import { Zone } from './Zone/Zone'
+import { Zone } from '@akka/zone'
 
 export class SupervisionTree {
 

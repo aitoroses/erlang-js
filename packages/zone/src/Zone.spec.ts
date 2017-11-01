@@ -22,11 +22,11 @@ test('When a zone runs, zone current is that zone', t => {
   })
 })
 
-test.only('Zone inception', t => {
+test('Zone inception', t => {
   Zone.current.fork({ name: 'ForkedZone' }).run(() => {
     Zone.current.fork({ name: 'ForkedSecondZone' }).run(() => {
       Zone.current.fork({ name: 'ForkedThirdZone' }).run(() => {
-        t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedSecondZone')
+        t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedThirdZone')
       })
     })
   })
@@ -36,7 +36,7 @@ test('Zone inception', t => {
   Zone.current.fork({ name: 'ForkedZone' }).run(() => {
     Zone.current.fork({ name: 'ForkedSecondZone' }).run(() => {
       Zone.current.fork({ name: 'ForkedThirdZone' }).run(() => {
-        t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedSecondZone')
+        t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedThirdZone')
       })
     })
   })
@@ -53,7 +53,7 @@ test('Deep thread', async t => {
 
             t.true(Zone.current.name === 'ForkedSecondZone', 'Should be named ForkedSecondZone')
             Zone.current.fork({ name: 'ForkedThirdZone' }).run(() => {
-              t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedSecondZone')
+              t.true(Zone.current.name === 'ForkedThirdZone', 'Should be named ForkedThirdZone')
               resolve()
             })
           }, 1000)

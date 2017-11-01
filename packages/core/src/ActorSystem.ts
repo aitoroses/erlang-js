@@ -2,9 +2,9 @@ import { Spec, SupervisorSpec, WorkerSpec } from './Spec'
 import { Actor, ActorConstructor, SupervisorActor } from './Actors'
 import { ActorRef } from './ActorRef'
 import { SupervisionTree } from './SupervisionTree'
-import { Zone } from './Zone/Zone'
 import { ExecutionModel, GlobalScheduler, Scheduler } from 'funfix'
 import { ActorZone } from './ActorZone'
+import { Zone } from '@akka/zone'
 
 export abstract class ActorSystem {
 

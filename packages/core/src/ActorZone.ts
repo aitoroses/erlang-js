@@ -1,4 +1,4 @@
-import { Zone, ZoneDelegate, ZoneSpec } from './Zone/Zone'
+import { Zone, ZoneDelegate, ZoneSpec } from '@akka/zone'
 import { Actor } from './Actors'
 import { ActorRef } from './ActorRef'
 import { Reference } from './types/reference'

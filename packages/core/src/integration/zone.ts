@@ -1,4 +1,5 @@
-import { Zone } from '../Zone/Zone'
+
+import { Zone } from '@akka/zone'
 
 const zoneB = Zone.current.fork({
   name: 'ZoneB',

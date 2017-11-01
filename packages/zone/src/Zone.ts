@@ -1,5 +1,5 @@
-type TaskHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
-type ErrorHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
+export type TaskHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
+export type ErrorHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
 
 export interface ZoneSpec {
   name: string

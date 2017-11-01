@@ -6,13 +6,15 @@
   "repository": "https://github.com/aitoroses/akkajs",
   "author": "Aitor Oses <aitor.oses@gmail.com>",
   "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc -w",
-    "lint": "tslint --fix src/**/*.ts",
-    "test": "tsc && ava build/**/*.spec.js",
-    "test:watch": "ava -w build/**/*.spec.js",
-    "dev": "run-p build:watch test:watch"
+    "bootstrap": "lerna bootstrap",
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "clean": "rimraf packages/**/build"
   },
   "devDependencies": {
     "ava": "^0.22.0",
@@ -20,10 +22,8 @@
     "tslint": "^5.7.0",
     "tslint-config-standard": "^6.0.1",
     "typescript": "^2.5.3",
-    "webpack": "^3.8.1"
+    "lerna": "^2.5.0",
+    "rimraf": "^2.6.2"
   },
-  "dependencies": {
-    "@types/webpack": "^3.0.13",
-    "funfix": "^6.2.2"
-  }
+  "dependencies": {}
 }
