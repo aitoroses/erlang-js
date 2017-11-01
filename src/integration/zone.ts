@@ -1,9 +1,8 @@
-
-import { Zone } from '../Zone'
+import { Zone } from '../Zone/Zone'
 
 const zoneB = Zone.current.fork({
   name: 'ZoneB',
-  onHandleError: function(parentDelegate, parentZone, targetZone, delegate, args, error) {
+  onHandleError: function (parentDelegate, parentZone, targetZone, delegate, args, error) {
     console.log('ZONEDELEGATENOW!!')
     console.error(error)
   }

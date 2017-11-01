@@ -1,34 +1,29 @@
 import { SupervisorActor } from '../../Actors'
 import { Spec, worker } from '../../Spec'
 import { Case, Match } from '../../match'
-import { PingPongActor, Start, GetResult } from './PingPongActor'
+import { GetResult, PingPongActor, Start } from './PingPongActor'
 
 export type SupervisorState = {
   name: string
 }
 
-export abstract class PingPongSMessages {}
-export class StartMatch extends PingPongSMessages {}
-export class GetResults extends PingPongSMessages {}
+export abstract class PingPongSMessages {
+}
+
+export class StartMatch extends PingPongSMessages {
+}
+
+export class GetResults extends PingPongSMessages {
+}
 
 export class PingPongSupervisor extends SupervisorActor<PingPongSMessages, SupervisorState> {
-
-  /**
-   * Create two worker actor that will play ping/pong
-   */
-  start(...args): Spec<any>[] {
-    return [
-      worker(PingPongActor, 'ping', {name: 'ping'}),
-      worker(PingPongActor, 'pong', {name: 'pong'})
-    ]
-  }
 
   /**
    * Initialize the state of the supervisor
    * @param {string} name
    * @returns {SupervisorState}
    */
-  init(name: string): SupervisorState {
+  init (name: string): SupervisorState {
 
     /**
      * Each second evaluate results
@@ -49,28 +44,41 @@ export class PingPongSupervisor extends SupervisorActor<PingPongSMessages, Super
    * @param {SupervisorState} state
    * @returns {Promise<SupervisorState>}
    */
-  async receive(msg: PingPongSMessages, state: SupervisorState) {
+  async receive (msg: PingPongSMessages, state: SupervisorState) {
 
     const pingRef: any = this.context.actorOf('ping')
     const pongRef: any = this.context.actorOf('pong')
 
     Match<any>(
-
       Case(StartMatch, () => {
         pingRef.tell(new Start())
         console.log('Supervisor started match')
       }),
 
       Case(GetResults, async (a) => {
-        const [ping, pong] = await Promise.all([
+        const [ ping, pong ] = await Promise.all([
           pingRef.ask(new GetResult()),
           pongRef.ask(new GetResult())
         ])
+
+        if (true === true) { // tslint:disable-line
+          throw Error('BOOOM!!')
+        }
 
         console.log({ ping, pong })
       })
     )(msg)
 
     return state
+  }
+
+  /**
+   * Create two worker actor that will play ping/pong
+   */
+  start (...args): Spec<any>[] {
+    return [
+      worker(PingPongActor, 'ping', { name: 'ping' }),
+      worker(PingPongActor, 'pong', { name: 'pong' })
+    ]
   }
 }

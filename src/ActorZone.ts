@@ -1,4 +1,4 @@
-import { Zone, ZoneDelegate, ZoneSpec } from './Zone'
+import { Zone, ZoneDelegate, ZoneSpec } from './Zone/Zone'
 import { Actor } from './Actors'
 import { ActorRef } from './ActorRef'
 import { Reference } from './types/reference'
@@ -6,21 +6,16 @@ import { Reference } from './types/reference'
 export class ActorZone implements ZoneSpec {
 
   name = 'ActorZone'
-  saveSender: ActorRef<any> | null
   saveCurrent: Actor<any, any> | null
   saveRespond: Function | null
+  saveSender: ActorRef<any> | null
 
-  constructor(
-    private currentActor: Actor<any, any>,
-    private senderRef: ActorRef<any>,
-    private ref?: Reference
-  ) {}
-
-  onHandleError (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) {
-    debugger
+  constructor (private currentActor: Actor<any, any>,
+               private senderRef: ActorRef<any>,
+               private ref?: Reference) {
   }
 
-  onAfterTask() {
+  onAfterTask () {
     // Restore state
     this.currentActor.context.current = this.saveCurrent
     this.currentActor.context.sender = this.saveSender as any
@@ -28,7 +23,7 @@ export class ActorZone implements ZoneSpec {
     this.saveSender = null
   }
 
-  onBeforeTask() {
+  onBeforeTask () {
     // Store current state
     this.saveSender = this.currentActor.context.sender
     this.saveCurrent = this.currentActor
@@ -51,5 +46,9 @@ export class ActorZone implements ZoneSpec {
     }
 
     this.currentActor.context.current = this.currentActor
+  }
+
+  onHandleError (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) {
+    debugger
   }
 }

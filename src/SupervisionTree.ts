@@ -3,18 +3,18 @@ import { Actor } from './Actors'
 import { Spec } from './Spec'
 import { ActorSystem } from './ActorSystem'
 import { ActorZone } from './ActorZone'
-import { Zone } from './Zone'
+import { Zone } from './Zone/Zone'
 
 export class SupervisionTree {
 
   public parent: SupervisionTree
 
-  constructor(public name: PID | string,
-              public children: SupervisionTree[],
-              public instance: Actor<any, any>) {
+  constructor (public name: PID | string,
+               public children: SupervisionTree[],
+               public instance: Actor<any, any>) {
   }
 
-  static createFromSpec(spec: Spec<any>, parentActor: SupervisionTree | null, actorSystem: ActorSystem) {
+  static createFromSpec (spec: Spec<any>, parentActor: SupervisionTree | null, actorSystem: ActorSystem) {
     const self = this
     const { actorClass, args, options } = spec
     const actor: Actor<any, any> = new actorClass()
@@ -34,7 +34,17 @@ export class SupervisionTree {
     return props
   }
 
-  forEach(cb: (s: SupervisionTree) => void) {
+  filter (predicate) {
+    let result: SupervisionTree[] = []
+    this.forEach(a => predicate(a) && result.push(a))
+    return result
+  }
+
+  find (predicate) {
+    return this.filter(predicate)[ 0 ]
+  }
+
+  forEach (cb: (s: SupervisionTree) => void) {
     cb(this)
     for (let a of this.children) {
       cb(a)
@@ -42,15 +52,5 @@ export class SupervisionTree {
         a.forEach(cb)
       }
     }
-  }
-
-  filter(predicate) {
-    let result: SupervisionTree[] = []
-    this.forEach(a => predicate(a) && result.push(a))
-    return result
-  }
-
-  find(predicate) {
-    return this.filter(predicate)[0]
   }
 }

@@ -1,33 +1,27 @@
-import {Spec, SupervisorSpec, WorkerSpec} from './Spec'
-import {Actor, ActorConstructor, SupervisorActor} from './Actors'
-import {ActorRef} from './ActorRef'
-import {SupervisionTree} from './SupervisionTree'
-import {Zone} from './Zone'
-import {Scheduler, GlobalScheduler, ExecutionModel} from 'funfix'
-import {ActorZone} from './ActorZone'
+import { Spec, SupervisorSpec, WorkerSpec } from './Spec'
+import { Actor, ActorConstructor, SupervisorActor } from './Actors'
+import { ActorRef } from './ActorRef'
+import { SupervisionTree } from './SupervisionTree'
+import { Zone } from './Zone/Zone'
+import { ExecutionModel, GlobalScheduler, Scheduler } from 'funfix'
+import { ActorZone } from './ActorZone'
 
 export abstract class ActorSystem {
 
-  sender: ActorRef<any>
   current: Actor<any, any> | null
   scheduler: Scheduler = new GlobalScheduler(false, ExecutionModel.synchronous())
+  sender: ActorRef<any>
   private messageProcessingScheduled: boolean = false
   private props: SupervisionTree
 
-  constructor() {
+  constructor () {
     Zone.current.fork({
       name: 'ActorSystemZone'
     })
     .run(() => this.initialize())
   }
 
-  abstract start(): SupervisorSpec<any>
-
-  initialize() {
-    this.props = this.initializeSupervisorSpec(this.start())
-  }
-
-  actorOf<Message, A extends Actor<Message, any>>(actorClass: ActorConstructor<Actor<Message, any>> | string): ActorRef<Message> {
+  actorOf<Message, A extends Actor<Message, any>> (actorClass: ActorConstructor<Actor<Message, any>> | string): ActorRef<Message> {
 
     const self = this
 
@@ -62,19 +56,13 @@ export abstract class ActorSystem {
     }
   }
 
-  private subscribeToMessages(actor) {
-    actor.mailbox.subscribe(() => {
-      if (!this.messageProcessingScheduled) {
-        this.scheduler.scheduleOnce(0, () => {
-          this.processMessages()
-          this.messageProcessingScheduled = false
-        })
-        this.messageProcessingScheduled = true
-      }
-    })
+  initialize () {
+    this.props = this.initializeSupervisorSpec(this.start())
   }
 
-  private initializeSupervisorSpec(spec: SupervisorSpec<any>) {
+  abstract start (): SupervisorSpec<any>
+
+  private initializeSupervisorSpec (spec: SupervisorSpec<any>) {
     const props = SupervisionTree.createFromSpec(spec, null, this)
     this.subscribeToMessages(props.instance)
 
@@ -91,13 +79,13 @@ export abstract class ActorSystem {
     return props
   }
 
-  private initializeWorkerSpec(spec: WorkerSpec<any>, parent: SupervisionTree) {
+  private initializeWorkerSpec (spec: WorkerSpec<any>, parent: SupervisionTree) {
     const props = SupervisionTree.createFromSpec(spec, parent, this)
     this.subscribeToMessages(props.instance)
     return props
   }
 
-  private processMessages() {
+  private processMessages () {
     const REDUCTIONS_PER_ACTOR = 8
     /**
      * Take every actor messages and run their receive method inside a zone
@@ -112,14 +100,26 @@ export abstract class ActorSystem {
             const resultState = actor.receive(message, actor.state)
             if (resultState) {
               Promise.resolve(resultState)
-                .then(nextState => {
-                  Object.freeze(nextState)
-                  actor.state = nextState
-                })
+              .then(nextState => {
+                Object.freeze(nextState)
+                actor.state = nextState
+              })
             }
           })
         })
       })
+    })
+  }
+
+  private subscribeToMessages (actor) {
+    actor.mailbox.subscribe(() => {
+      if (!this.messageProcessingScheduled) {
+        this.scheduler.scheduleOnce(0, () => {
+          this.processMessages()
+          this.messageProcessingScheduled = false
+        })
+        this.messageProcessingScheduled = true
+      }
     })
   }
 }

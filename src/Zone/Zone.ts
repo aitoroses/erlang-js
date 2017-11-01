@@ -1,15 +1,18 @@
+type TaskHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
+type ErrorHook = (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
+
 export interface ZoneSpec {
   name: string
-  onBeforeTask: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
-  onAfterTask: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
-  onHandleError: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
+  onAfterTask: TaskHook
+  onBeforeTask: TaskHook
+  onHandleError: ErrorHook
 }
 
 export interface ZoneSpecArgs {
   name: string
-  onBeforeTask?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
-  onAfterTask?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[]) => void
-  onHandleError?: (parentZoneDelegate: ZoneDelegate, parentZone: Zone, targetZone: Zone, delegate: Function, source: any[], error: Error) => void
+  onAfterTask?: TaskHook
+  onBeforeTask?: TaskHook
+  onHandleError?: ErrorHook
 }
 
 export type ZoneDelegate = {
@@ -28,23 +31,23 @@ const emptySpecHooks = {
 }
 
 const WrapPlugins = {
-  setTimeout(zone: Zone) {
+  setTimeout (zone: Zone) {
     const setTimeout = global.setTimeout
     global.setTimeout = (task: Function, delay: number) => setTimeout(zone.wrap(task), delay)
     return () => global.setTimeout = setTimeout
   },
 
-  setInterval(zone: Zone) {
+  setInterval (zone: Zone) {
     const setInterval = global.setInterval
     global.setInterval = (task: Function, delay: number) => setInterval(zone.wrap(task), delay)
     return () => global.setInterval = setInterval
   },
 
-  HTMLEventListener(zone: Zone) {
+  HTMLEventListener (zone: Zone) {
     if ((global as any).HTMLElement) {
       const addEventListener = HTMLElement.prototype.addEventListener
       HTMLElement.prototype.addEventListener = function (...args) {
-        args[1] = zone.wrap(args[1])
+        args[ 1 ] = zone.wrap(args[ 1 ])
         return addEventListener.apply(this, args)
       }
       return () => HTMLElement.prototype.addEventListener = addEventListener
@@ -54,19 +57,19 @@ const WrapPlugins = {
     }
   },
 
-  Promise(zone: Zone) {
+  Promise (zone: Zone) {
     const promise: any = Promise
     const proto = Promise.prototype
     const ctor = Promise.constructor
     const thenfn = Promise.prototype.then
     const catchfn = Promise.prototype.catch
 
-    const ZonePromise: any = function ZonePromise(...args) {
-      args[0] = zone.wrap(args[0])
+    const ZonePromise: any = function ZonePromise (...args) {
+      args[ 0 ] = zone.wrap(args[ 0 ])
       return new promise(...args)
-    }
+    };
 
-    ;(global as any).Promise = ZonePromise
+    (global as any).Promise = ZonePromise
 
     ZonePromise.prototype = Object.create(proto)
     ZonePromise.reject = promise.reject
@@ -75,17 +78,17 @@ const WrapPlugins = {
     ZonePromise.race = promise.race
 
     ZonePromise.constructor = function (...args) {
-      args[0] = zone.wrap(args[0])
+      args[ 0 ] = zone.wrap(args[ 0 ])
       return ctor.apply(this, args)
     }
 
     ZonePromise.prototype.then = function (...args) {
-      args[0] = zone.wrap(args[0])
+      args[ 0 ] = zone.wrap(args[ 0 ])
       return thenfn.apply(this, args)
     }
 
     ZonePromise.prototype.catch = function (...args) {
-      args[0] = zone.wrap(args[0])
+      args[ 0 ] = zone.wrap(args[ 0 ])
       return catchfn.apply(this, args)
     }
 
@@ -100,41 +103,41 @@ const WrapPlugins = {
 
 export class Zone {
 
-  public parentZone: Zone
   public name: string
+  public parentZone: Zone
   private zoneSpec: ZoneSpec
 
-  constructor(zoneSpec: ZoneSpecArgs) {
+  constructor (zoneSpec: ZoneSpecArgs) {
     this.zoneSpec = Object.assign({}, emptySpecHooks, zoneSpec, Object.getPrototypeOf(zoneSpec))
     this.name = zoneSpec.name
   }
 
-  static get current(): Zone {
+  static get current (): Zone {
     return currentZone
   }
 
-  fork(zoneSpec: ZoneSpecArgs) {
+  fork (zoneSpec: ZoneSpecArgs) {
     const zone = new Zone(zoneSpec)
     zone.parentZone = this
     return zone
   }
 
-  run<A>(task: () => A) {
+  run<A> (task: () => A) {
     this.runGuarded(task, [])
   }
 
-  wrap(fn) {
+  wrap (fn) {
     return (...args) =>
       this.runGuarded(fn, args)
   }
 
-  private runGuarded<A>(fn: () => A, args: any[]): A | undefined {
+  private runGuarded<A> (fn: () => A, args: any[]): A | undefined {
     const previousZone = Zone.current
     currentZone = this
 
     const plugins = Object
-      .keys(WrapPlugins)
-      .map(pluginName => WrapPlugins[pluginName](this))
+    .keys(WrapPlugins)
+    .map(pluginName => WrapPlugins[ pluginName ](this))
 
     const delegate = fn
     const source = args
@@ -162,7 +165,7 @@ export class Zone {
   }
 }
 
-const rootZone = new Zone({name: '<root>'})
+const rootZone = new Zone({ name: '<root>' })
 rootZone.parentZone = rootZone
 
 let currentZone = rootZone

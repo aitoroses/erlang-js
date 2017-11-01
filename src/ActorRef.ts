@@ -5,31 +5,10 @@ import { Mailbox } from './Mailbox'
 
 export class ActorRef<Message> {
 
-  constructor(private target: Actor<Message, any>, private system: ActorSystem) {}
-
-  tell(message: Message, ms?: number): void {
-
-    if (!this.system.current) {
-      throw Error('Only an actor can Ref.ask(...) another actor')
-    }
-
-    const request = {
-      sender: this.system.current && this.system.current.getRef(),
-      message
-    }
-
-    const deliver = () => (this.target as any).mailbox.deliver(request)
-
-    if (ms !== undefined) {
-      setTimeout(() => {
-        deliver()
-      }, ms)
-    } else {
-      deliver()
-    }
+  constructor (private target: Actor<Message, any>, private system: ActorSystem) {
   }
 
-  ask(message: Message, timeout: number = 5000) {
+  ask (message: Message, timeout: number = 5000) {
     if (!this.system.current) {
       throw Error('Only an actor can Ref.ask(...) another actor')
     }
@@ -60,12 +39,35 @@ export class ActorRef<Message> {
           resolve(response.message)
         }
       })
-    })/*.catch((e) => {
-      debugger
-    })*/
+    })
+    /*.catch((e) => {
+          debugger
+        })*/
   }
 
-  respond(response) {
+  respond (response) {
     throw Error(`Cannot respond to message in ${this.target.toString()}`)
+  }
+
+  tell (message: Message, ms?: number): void {
+
+    if (!this.system.current) {
+      throw Error('Only an actor can Ref.ask(...) another actor')
+    }
+
+    const request = {
+      sender: this.system.current && this.system.current.getRef(),
+      message
+    }
+
+    const deliver = () => (this.target as any).mailbox.deliver(request)
+
+    if (ms !== undefined) {
+      setTimeout(() => {
+        deliver()
+      }, ms)
+    } else {
+      deliver()
+    }
   }
 }

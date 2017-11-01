@@ -15,14 +15,16 @@ export abstract class Actor<Message, State> {
   state: State
   private mailbox = new Mailbox()
   private pid = new PID()
-  abstract receive(msg: Message, state: State)
-  abstract init(...args): State
 
-  getRef() {
+  getRef () {
     return new ActorRef(this, this.context)
   }
+
+  abstract init (...args): State
+
+  abstract receive (msg: Message, state: State)
 }
 
 export abstract class SupervisorActor<Message, State> extends Actor<Message, State> {
-  abstract start(...args): Spec<any>[]
+  abstract start (...args): Spec<any>[]
 }
