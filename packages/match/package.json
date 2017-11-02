@@ -1,5 +1,5 @@
 {
-  "name": "@akka/core",
+  "name": "@akka/match",
   "version": "0.0.1",
   "main": "lib/index.js",
   "author": "Aitor Oses <aitor.oses@gmail.com>",
@@ -21,8 +21,6 @@
     "typescript": "^2.5.3"
   },
   "dependencies": {
-    "@akka/zone": "^0.0.1",
-    "@akka/match": "^0.0.1",
-    "funfix": "^6.2.2"
+    "@types/node": "^8.0.47"
   }
 }
