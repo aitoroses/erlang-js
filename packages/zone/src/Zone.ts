@@ -154,7 +154,7 @@ export class Zone {
     try {
       this.zoneSpec.onBeforeTask(parentDelegate, parentZone, this, delegate, source)
       result = fn(...args)
-      this.zoneSpec.onBeforeTask(parentDelegate, parentZone, this, delegate, source)
+      this.zoneSpec.onAfterTask(parentDelegate, parentZone, this, delegate, source)
     } catch (error) {
       this.zoneSpec.onHandleError(parentDelegate, parentZone, this, delegate, source, error)
     }
